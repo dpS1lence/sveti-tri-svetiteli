@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   FlatList,
@@ -7,12 +7,33 @@ import {
   Text,
   View,
   ScrollView,
+  TouchableOpacity,
 } from "react-native";
-import { TouchableOpacity } from "react-native";
+import Icon from "react-native-vector-icons/Ionicons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import HramImg from "../../assets/images/hram-gorna-2.png";
+import { getAllPosts } from "../../lib/appwrite";
 
 const Home = () => {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPosts = async () => {
+    setLoading(true);
+    try {
+      const fetchedPosts = await getAllPosts();
+      setPosts(fetchedPosts);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView className="bg-primary flex-1">
@@ -25,48 +46,24 @@ const Home = () => {
             className="w-full h-80 rounded-xl mb-4"
             resizeMode="cover"
           />
-          <Text className="text-2xl font-pbold text-white mb-6">
-            Активни новини
-          </Text>
+          <View className="flex-row justify-between items-center mb-6">
+            <View className="flex-row items-center">
+              <Text className="text-2xl font-pbold text-white mr-2">
+                Активни новини
+              </Text>
+              <TouchableOpacity onPress={fetchPosts}>
+                <Icon name="refresh" size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
 
           <FlatList
             scrollEnabled={false}
-            data={[
-              {
-                id: "1",
-                title: "Breaking News 1",
-                description: "Short description of the first news item...",
-                image: "https://picsum.photos/200/300",
-              },
-              {
-                id: "2",
-                title: "Important Update",
-                description: "Brief overview of an important update...",
-                image: "https://picsum.photos/200/300",
-              },
-              {
-                id: "3",
-                title: "Latest Development",
-                description: "Quick summary of recent developments...",
-                image: "https://picsum.photos/200/300",
-              },
-              {
-                id: "4",
-                title: "New Announcement",
-                description: "Details about a new announcement...",
-                image: "https://picsum.photos/200/300",
-              },
-              {
-                id: "5",
-                title: "Featured Story",
-                description: "Highlights from our featured story...",
-                image: "https://picsum.photos/200/300",
-              },
-            ]}
+            data={posts}
             renderItem={({ item }) => (
               <View className="bg-black-100 rounded-xl p-4 mb-4 flex-row">
                 <Image
-                  source={{ uri: item.image }}
+                  source={{ uri: item.imageurl }}
                   className="w-20 h-20 rounded-lg"
                 />
                 <View className="flex-1 ml-4">
@@ -75,6 +72,15 @@ const Home = () => {
                   </Text>
                   <Text className="text-gray-100 font-pregular mt-1">
                     {item.description}
+                  </Text>
+                  <Text className="text-gray-400 font-pregular mt-1">
+                    {item.$updatedAt !== item.$createdAt
+                      ? `Редактирано на ${new Date(
+                          item.$updatedAt
+                        ).toLocaleDateString("bg-BG")}`
+                      : `Създадено на ${new Date(
+                          item.$createdAt
+                        ).toLocaleDateString("bg-BG")}`}
                   </Text>
                   <View className="flex-row mt-3 space-x-3">
                     <TouchableOpacity className="bg-secondary px-4 py-2 rounded-lg">
@@ -89,7 +95,10 @@ const Home = () => {
                 </View>
               </View>
             )}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.$id}
+            refreshControl={
+              <RefreshControl refreshing={loading} onRefresh={fetchPosts} />
+            }
           />
         </ScrollView>
       </SafeAreaView>

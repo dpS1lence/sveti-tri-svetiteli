@@ -21,9 +21,8 @@ const Create = () => {
         type: "image/*",
       });
 
-      if (result.type === "success") {
-        setForm({ ...form, image: result });
-      }
+      setForm({ ...form, image: result.assets[0] });
+      console.log(form.image);
     } catch (error) {
       console.log(error);
     }
@@ -68,25 +67,20 @@ const Create = () => {
         <View className="mt-7 space-y-2">
           <Text className="text-base text-gray-100 font-pmedium">Снимка</Text>
 
-          <TouchableOpacity onPress={openPicker}>
+          <TouchableOpacity
+            onPress={openPicker}
+            className="w-full h-64 rounded-2xl border-2 border-dashed border-gray-400 flex items-center justify-center"
+          >
             {form.image ? (
               <Image
                 source={{ uri: form.image.uri }}
                 resizeMode="cover"
-                className="w-full h-64 rounded-2xl"
+                className="w-full h-full rounded-2xl"
               />
             ) : (
-              <View className="w-full h-16 px-4 bg-black-100 rounded-2xl border-2 border-black-200 flex justify-center items-center flex-row space-x-2">
-                <Image
-                  source={icons.upload}
-                  resizeMode="contain"
-                  alt="upload"
-                  className="w-5 h-5"
-                />
-                <Text className="text-sm text-gray-100 font-pmedium">
-                  Изберете файл
-                </Text>
-              </View>
+              <Text className="text-gray-400 font-pmedium text-lg">
+                Натиснете тук, за да качите снимка
+              </Text>
             )}
           </TouchableOpacity>
         </View>

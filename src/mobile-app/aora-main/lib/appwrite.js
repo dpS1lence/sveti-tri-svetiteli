@@ -1,12 +1,12 @@
 import { Client, Databases, ID, Storage } from "react-native-appwrite";
 
 export const appwriteConfig = {
-  endpoint: "https://cloud.appwrite.io/v1",
-  platform: "com.s.s",
-  projectId: "s",
-  databaseId: "s",
-  storageId: "s",
-  postsCollectionId: "s",
+  endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
+  platform: process.env.EXPO_PUBLIC_APPWRITE_PLATFORM,
+  projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
+  databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID,
+  storageId: process.env.EXPO_PUBLIC_APPWRITE_STORAGE_ID,
+  postsCollectionId: process.env.EXPO_PUBLIC_APPWRITE_POSTS_COLLECTION_ID,
 };
 
 const client = new Client();
@@ -21,13 +21,18 @@ const storage = new Storage(client);
 
 // Upload file to storage
 export async function uploadFile(file) {
-  if (!file) return null;
+  if (!file || !file.uri) return null;
 
   try {
     const uploadedFile = await storage.createFile(
       appwriteConfig.storageId,
       ID.unique(),
-      file
+      {
+        name: file.name,
+        type: file.mimeType,
+        size: file.size,
+        uri: file.uri,
+      }
     );
 
     const fileUrl = storage.getFilePreview(
@@ -53,7 +58,7 @@ export async function uploadFile(file) {
 export async function createPost({ title, description, imageFile }) {
   try {
     // First upload the image
-    //const { fileUrl } = await uploadFile(imageFile);
+    const { fileUrl } = await uploadFile(imageFile);
 
     // Then create the post document
     const post = await databases.createDocument(
@@ -63,7 +68,7 @@ export async function createPost({ title, description, imageFile }) {
       {
         title,
         description,
-        imageurl: "fileUrl",
+        imageurl: fileUrl,
         createdat: new Date().toISOString(),
       }
     );
@@ -82,7 +87,7 @@ export async function getAllPosts() {
       appwriteConfig.databaseId,
       appwriteConfig.postsCollectionId
     );
-
+    console.log(posts.documents);
     return posts.documents;
   } catch (error) {
     console.error("Error fetching posts:", error);
