@@ -94,3 +94,46 @@ export async function getAllPosts() {
     throw error;
   }
 }
+
+export const deletePost = async (postId) => {
+  try {
+    await databases.deleteDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.postsCollectionId,
+      postId
+    );
+    console.log("Post deleted successfully");
+  } catch (error) {
+    console.error("Error deleting post:", error);
+  }
+};
+
+export const updatePost = async (postId, updatedData) => {
+  try {
+    console.log("Updating post with ID:", postId);
+    let imageurl = null;
+
+    // If there's a new image, upload it first
+    if (updatedData.imageFile) {
+      const { fileUrl } = await uploadFile(updatedData.imageFile);
+      imageurl = fileUrl;
+    }
+
+    // Update the post document
+    const updatedPost = await databases.updateDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.postsCollectionId,
+      postId,
+      {
+        title: updatedData.title,
+        description: updatedData.description,
+        ...(imageurl && { imageurl }), // Only include imageurl if a new image was uploaded
+      }
+    );
+
+    return updatedPost;
+  } catch (error) {
+    console.error("Error updating post:", error);
+    throw error;
+  }
+};

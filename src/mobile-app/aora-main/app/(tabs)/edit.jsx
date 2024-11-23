@@ -1,30 +1,29 @@
 import { useState, useEffect } from "react";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
 
-import { icons } from "../../constants";
 import { CustomButton, FormField } from "../../components";
-import { createPost } from "../../lib/appwrite";
+import { updatePost } from "../../lib/appwrite";
 
-const Create = ({ route = {} }) => {
+const Edit = () => {
+  const params = useLocalSearchParams();
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    image: null,
+    title: params.title || "",
+    description: params.description || "",
+    image: params.imageurl ? { uri: params.imageurl } : null,
   });
 
   useEffect(() => {
-    if (route.params?.post) {
-      const { title, description, imageurl } = route.params.post;
+    if (params.postId) {
       setForm({
-        title,
-        description,
-        image: { uri: imageurl },
+        title: params.title || "",
+        description: params.description || "",
+        image: params.imageurl ? { uri: params.imageurl } : null,
       });
     }
-  }, [route.params]);
+  }, [params.postId]); // Only re-run if ID changes
 
   const openPicker = async () => {
     try {
@@ -32,23 +31,30 @@ const Create = ({ route = {} }) => {
         type: "image/*",
       });
 
-      setForm({ ...form, image: result.assets[0] });
-      console.log(form.image);
+      if (result.type === "success") {
+        setForm({ ...form, image: result });
+      }
     } catch (error) {
-      console.log(error);
+      console.log("Error picking image:", error);
     }
   };
 
-  const handleCreatePost = async () => {
+  const handleUpdatePost = async () => {
     try {
-      const post = await createPost({
+      console.log(params);
+
+      const imageFile =
+        form.image && !form.image.uri.startsWith("http") ? form.image : null;
+
+      await updatePost(params.postId, {
         title: form.title,
         description: form.description,
-        imageFile: form.image,
+        imageFile: imageFile,
       });
-      console.log("Post created successfully:", post);
+      console.log("Post updated successfully");
+      router.back();
     } catch (error) {
-      console.error("Error creating/updating post:", error);
+      console.error("Error updating post:", error);
     }
   };
 
@@ -56,7 +62,7 @@ const Create = ({ route = {} }) => {
     <SafeAreaView className="bg-primary h-full">
       <ScrollView className="px-4 my-6">
         <Text className="text-2xl text-white font-psemibold">
-          Създай новина
+          Редакция на новина
         </Text>
 
         <FormField
@@ -97,8 +103,8 @@ const Create = ({ route = {} }) => {
         </View>
 
         <CustomButton
-          title="Създай новина"
-          handlePress={handleCreatePost}
+          title="Редактирай новина"
+          handlePress={handleUpdatePost}
           containerStyles="mt-7"
         />
       </ScrollView>
@@ -106,4 +112,4 @@ const Create = ({ route = {} }) => {
   );
 };
 
-export default Create;
+export default Edit;

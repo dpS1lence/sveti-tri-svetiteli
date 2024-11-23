@@ -8,15 +8,18 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import HramImg from "../../assets/images/hram-gorna-2.png";
-import { getAllPosts } from "../../lib/appwrite";
+import { getAllPosts, deletePost } from "../../lib/appwrite";
+import { useRouter } from "expo-router";
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -28,6 +31,45 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditPost = (postId, post) => {
+    console.log("Editing post:", post);
+
+    router.push({
+      pathname: "/edit",
+      params: {
+        postId: postId,
+        title: post.title,
+        description: post.description,
+        imageurl: post.imageurl,
+      },
+    });
+  };
+
+  const handleDeletePost = (postId) => {
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete this post?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              await deletePost(postId);
+              fetchPosts(); // Refresh the list after deletion
+            } catch (error) {
+              console.error("Error deleting post:", error);
+            }
+          },
+          style: "destructive",
+        },
+      ]
+    );
   };
 
   useEffect(() => {
@@ -83,12 +125,18 @@ const Home = () => {
                         ).toLocaleDateString("bg-BG")}`}
                   </Text>
                   <View className="flex-row mt-3 space-x-3">
-                    <TouchableOpacity className="bg-secondary px-4 py-2 rounded-lg">
+                    <TouchableOpacity
+                      className="bg-secondary px-4 py-2 rounded-lg"
+                      onPress={() => handleEditPost(item.$id, item)}
+                    >
                       <Text className="text-white font-pmedium">
                         Редактирай
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity className="bg-red-500 px-4 py-2 rounded-lg">
+                    <TouchableOpacity
+                      className="bg-red-500 px-4 py-2 rounded-lg"
+                      onPress={() => handleDeletePost(item.$id)}
+                    >
                       <Text className="text-white font-pmedium">Изтрий</Text>
                     </TouchableOpacity>
                   </View>
